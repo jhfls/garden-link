@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能语音解说</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center;
+        }
+        .container { 
+            width: 1280px; height: 720px; background: rgba(255,255,255,0.1); 
+            border-radius: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 30px;
+        }
+        .title { 
+            font-size: 48px; color: white; margin-bottom: 30px; text-align: center;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+            height: 80%;
+        }
+        
+        .video-panel {
+            background: rgba(0,0,0,0.3);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .video-title {
+            font-size: 24px;
+            color: white;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .video-container {
+            width: 100%;
+            height: 360px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            padding: 15px 30px;
+            background: #00b09b;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover:not(:disabled) {
+            background: #009c7d;
+            transform: scale(1.05);
+        }
+        
+        .control-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .control-btn.capture {
+            background: #ff416c;
+        }
+        
+        .control-btn.capture:hover:not(:disabled) {
+            background: #e03a5f;
+        }
+        
+        .info-panel {
+            background: rgba(255,255,255,0.15);
+            border-radius: 15px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .status-section {
+            margin-bottom: 25px;
+        }
+        
+        .status-title {
+            font-size: 20px;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+        
+        .status-value {
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .status-value.ready { color: #4caf50; }
+        .status-value.processing { color: #ff9800; }
+        .status-value.speaking { color: #2196f3; }
+        
+        .result-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .result-box {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+        }
+        
+        .result-text {
+            color: white;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .result-label {
+            font-size: 16px;
+            color: #ccc;
+            margin-bottom: 8px;
+        }
+        
+        .back-btn { 
+            padding: 15px 30px; 
+            background: #00b09b; 
+            color: white; 
+            border: none; 
+            border-radius: 25px; 
+            font-size: 18px; 
+            cursor: pointer; 
+            margin-top: 20px;
+        }
+        .back-btn:hover { background: #009c7d; }
+        
+        .audio-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2196f3;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">智能语音解说系统</h1>
+        
+        <div class="content">
+            <!-- 左侧：视频面板 -->
+            <div class="video-panel">
+                <div class="video-title">实时预览画面</div>
+                <div class="video-container">
+                    <img src="/broadcast_video_feed" class="video-feed" id="videoFeed">
+                </div>
+                <div class="control-panel">
+                    <button class="control-btn capture" id="captureBtn" onclick="captureImage()">
+                        拍摄图片
+                    </button>
+                </div>
+                <div class="audio-indicator" id="audioIndicator" style="display: none;">
+                    <span>🔊</span>
+                    <span class="pulse">语音播放中...</span>
+                </div>
+            </div>
+            
+            <!-- 右侧：信息面板 -->
+            <div class="info-panel">
+                <div class="status-section">
+                    <div class="status-title">系统状态</div>
+                    <div class="status-value" id="systemStatus">READY</div>
+                </div>
+                
+                <div class="result-section">
+                    <div>
+                        <div class="result-label">OCR识别结果</div>
+                        <div class="result-box">
+                            <div class="result-text" id="ocrResult">等待拍摄...</div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="result-label">AI解说内容</div>
+                        <div class="result-box">
+                            <div class="result-text" id="aiResponse">等待分析...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="back-btn" onclick="window.location.href='/'">返回主页面</button>
+    </div>
+
+    <script>
+        let statusInterval = null;
+        
+        // 更新状态显示
+        function updateStatusDisplay(statusData) {
+            const statusElement = document.getElementById('systemStatus');
+            const captureBtn = document.getElementById('captureBtn');
+            const audioIndicator = document.getElementById('audioIndicator');
+            
+            // 更新状态
+            statusElement.textContent = statusData.broadcast_state;
+            statusElement.className = 'status-value ' + statusData.broadcast_state.toLowerCase();
+            
+            // 更新按钮状态
+            const isBusy = statusData.broadcast_state !== 'READY';
+            captureBtn.disabled = isBusy;
+            captureBtn.textContent = isBusy ? '处理中...' : '拍摄图片';
+            
+            // 更新音频指示器
+            audioIndicator.style.display = statusData.is_playing_audio ? 'flex' : 'none';
+            
+            // 更新结果
+            if (statusData.ocr_text) {
+                document.getElementById('ocrResult').textContent = statusData.ocr_text;
+            }
+            if (statusData.ai_response) {
+                document.getElementById('aiResponse').textContent = statusData.ai_response;
+            }
+        }
+        
+        // 获取系统状态
+        async function getBroadcastStatus() {
+            try {
+                const response = await fetch('/api/broadcast/status');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    updateStatusDisplay(data.data);
+                }
+            } catch (error) {
+                console.error('获取状态失败:', error);
+            }
+        }
+        
+        // 拍摄图片
+        async function captureImage() {
+            try {
+                const response = await fetch('/api/broadcast/capture', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const data = await response.json();
+                alert(data.message);
+                
+            } catch (error) {
+                alert('拍摄失败: ' + error.message);
+            }
+        }
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 开始状态监控
+            statusInterval = setInterval(getBroadcastStatus, 1000);
+            
+            // 设置视频错误处理
+            document.getElementById('videoFeed').addEventListener('error', function() {
+                console.log('视频流加载错误');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+[project]
+name = "garden_link"
+version = "0.0.0"
+requires-python = ">=3.13"
+dependencies = [
+    "requests>=2.31.0",
+    "pillow>=10.0.0",
+    "openai>=2.6.0",
+    "ruff>=0.14.1",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.38.0",
+    "pydantic>=2.12.3",
+    "opencv-python>=4.12.0.88",
+]

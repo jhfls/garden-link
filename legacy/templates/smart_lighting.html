@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能灯光控制</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center;
+        }
+        .container { 
+            width: 1280px; height: 720px; background: rgba(255,255,255,0.1); 
+            border-radius: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 40px;
+        }
+        .title { font-size: 48px; color: white; margin-bottom: 30px; text-align: center; }
+        
+        .control-panel { 
+            display: flex; gap: 30px; margin-bottom: 30px;
+        }
+        .control-btn { 
+            padding: 20px 40px; color: white; border: none; 
+            border-radius: 25px; font-size: 24px; cursor: pointer; 
+            transition: all 0.3s ease;
+        }
+        .start-btn { 
+            background: linear-gradient(135deg, #00b09b, #96c93d);
+        }
+        .start-btn:hover { 
+            background: linear-gradient(135deg, #009c7d, #7dbd3d);
+            transform: scale(1.05);
+        }
+        .stop-btn { 
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        }
+        .stop-btn:hover { 
+            background: linear-gradient(135deg, #e03a5f, #e04427);
+            transform: scale(1.05);
+        }
+        
+        .status-panel {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px 30px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 200px;
+        }
+        .status-label {
+            font-size: 18px;
+            color: #ccc;
+            margin-bottom: 8px;
+        }
+        .status-value {
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .slider-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 80%;
+            margin-bottom: 30px;
+        }
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+        }
+        .slider-label {
+            font-size: 20px;
+            color: white;
+            min-width: 180px;
+        }
+        .slider-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .slider {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #00b09b;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+        .slider-value {
+            font-size: 20px;
+            color: white;
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .info-panel {
+            color: white; 
+            font-size: 16px; 
+            text-align: center; 
+            max-width: 80%; 
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .back-btn { 
+            padding: 15px 30px; background: #00b09b; color: white; border: none; 
+            border-radius: 25px; font-size: 20px; cursor: pointer; margin-top: 20px;
+        }
+        .back-btn:hover { background: #009c7d; }
+
+        .debug-info {
+            font-size: 14px; 
+            color: #ffeb3b; 
+            margin: 10px 0;
+            padding: 10px; 
+            background: rgba(0,0,0,0.3); 
+            border-radius: 5px;
+            max-width: 80%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">智能灯光控制系统</h1>
+        
+        <!-- 状态面板 -->
+        <div class="status-panel">
+            <div class="status-card">
+                <div class="status-label">灯带状态</div>
+                <div class="status-value" id="statusDisplay">检测中...</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">当前亮度</div>
+                <div class="status-value" id="brightnessDisplay">50</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">跑马灯长度</div>
+                <div class="status-value" id="lengthDisplay">5</div>
+            </div>
+        </div>
+        
+        <!-- 控制按钮 -->
+        <div class="control-panel">
+            <button class="control-btn start-btn" onclick="startLedAnimation()">启动跑马灯</button>
+            <button class="control-btn stop-btn" onclick="stopLedAnimation()">停止灯光</button>
+        </div>
+        
+        <!-- 滑块控制面板 -->
+        <div class="slider-panel">
+            <div class="slider-group">
+                <div class="slider-label">亮度调节</div>
+                <div class="slider-container">
+                    <input type="range" min="0" max="255" value="50" class="slider" id="brightnessSlider" oninput="updateBrightness(this.value)">
+                    <div class="slider-value" id="brightnessValue">50</div>
+                </div>
+            </div>
+            
+            <div class="slider-group">
+                <div class="slider-label">跑马灯长度</div>
+                <div class="slider-container">
+                    <input type="range" min="1" max="30" value="5" class="slider" id="lengthSlider" oninput="updateChaseLength(this.value)">
+                    <div class="slider-value" id="lengthValue">5</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 调试信息 -->
+        <div class="debug-info" id="debugInfo">
+            系统就绪，等待操作...
+        </div>
+        
+        <!-- 信息面板 -->
+        <div class="info-panel">
+            <p>灯带配置: GPIO18, 30个灯珠 | 亮度范围: 0-255 | 跑马灯长度: 1-30个灯珠</p>
+            <p>实时调节: 拖动滑块可立即生效，无需重启动画</p>
+        </div>
+        
+        <button class="back-btn" onclick="window.location.href='/'">返回主页面</button>
+    </div>
+
+    <script>
+        // 当前状态
+        let currentBrightness = 50;
+        let currentChaseLength = 5;
+        let isAnimationRunning = false;
+
+        // 调试日志
+        function debugLog(message) {
+            console.log(message);
+            const debugElement = document.getElementById('debugInfo');
+            if (debugElement) {
+                debugElement.textContent = message;
+            }
+        }
+
+        // 更新状态显示
+        function updateStatus(message) {
+            document.getElementById('statusDisplay').textContent = message;
+            isAnimationRunning = message.includes('运行中');
+            debugLog('状态更新: ' + message);
+        }
+
+        // 更新亮度显示
+        function updateBrightnessDisplay(value) {
+            document.getElementById('brightnessDisplay').textContent = value;
+            document.getElementById('brightnessValue').textContent = value;
+        }
+
+        // 更新长度显示
+        function updateLengthDisplay(value) {
+            document.getElementById('lengthDisplay').textContent = value;
+            document.getElementById('lengthValue').textContent = value;
+        }
+
+        // 设置亮度
+        async function updateBrightness(value) {
+            currentBrightness = parseInt(value);
+            updateBrightnessDisplay(value);
+            
+            try {
+                debugLog(`设置亮度: ${currentBrightness}`);
+                const response = await fetch('/api/led/set_brightness', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        brightness: currentBrightness
+                    })
+                });
+                
+                const data = await response.json();
+                debugLog(`亮度设置响应: ${data.message}`);
+                
+                if (data.status === 'success') {
+                    debugLog(`亮度已更新为: ${currentBrightness}`);
+                } else {
+                    debugLog(`亮度设置失败: ${data.message}`);
+                }
+                
+            } catch (error) {
+                debugLog('亮度设置失败: ' + error.message);
+            }
+        }
+
+        // 设置跑马灯长度
+        async function updateChaseLength(value) {
+            currentChaseLength = parseInt(value);
+            updateLengthDisplay(value);
+            
+            try {
+                debugLog(`设置跑马灯长度: ${currentChaseLength}`);
+                const response = await fetch('/api/led/set_chase_length', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        length: currentChaseLength
+                    })
+                });
+                
+                const data = await response.json();
+                debugLog(`长度设置响应: ${data.message}`);
+                
+                if (data.status === 'success') {
+                    debugLog(`跑马灯长度已更新为: ${currentChaseLength}`);
+                } else {
+                    debugLog(`长度设置失败: ${data.message}`);
+                }
+                
+            } catch (error) {
+                debugLog('长度设置失败: ' + error.message);
+            }
+        }
+
+        // 启动LED动画
+        async function startLedAnimation() {
+            debugLog('点击了"启动跑马灯"按钮');
+            
+            try {
+                updateStatus('灯带状态: 启动中...');
+                
+                const response = await fetch('/api/led/control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'start'
+                    })
+                });
+                
+                debugLog(`响应状态: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                debugLog(`API响应: ${JSON.stringify(data)}`);
+                
+                if (data.status === 'success') {
+                    updateStatus('灯带状态: 跑马灯运行中');
+                    debugLog('启动成功');
+                    
+                    // 更新状态显示
+                    setTimeout(checkLedStatus, 1000);
+                } else {
+                    updateStatus('灯带状态: 启动失败');
+                    debugLog('启动失败: ' + data.message);
+                }
+                
+            } catch (error) {
+                debugLog('请求失败: ' + error.message);
+                updateStatus('灯带状态: 请求失败');
+            }
+        }
+
+        // 停止LED动画
+        async function stopLedAnimation() {
+            debugLog('点击了"停止灯光"按钮');
+            
+            try {
+                updateStatus('灯带状态: 停止中...');
+                
+                const response = await fetch('/api/led/control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'stop'
+                    })
+                });
+                
+                debugLog(`响应状态: ${response.status}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                debugLog(`API响应: ${JSON.stringify(data)}`);
+                
+                if (data.status === 'success') {
+                    updateStatus('灯带状态: 已停止');
+                    debugLog('停止成功');
+                } else {
+                    updateStatus('灯带状态: 停止失败');
+                    debugLog('停止失败: ' + data.message);
+                }
+                
+            } catch (error) {
+                debugLog('请求失败: ' + error.message);
+                updateStatus('灯带状态: 请求失败');
+            }
+        }
+
+        // 检查LED状态
+        async function checkLedStatus() {
+            try {
+                const response = await fetch('/api/led/status');
+                const data = await response.json();
+                
+                if (data.status === 'running') {
+                    updateStatus('灯带状态: 跑马灯运行中');
+                    // 更新当前设置
+                    if (data.brightness !== undefined) {
+                        currentBrightness = data.brightness;
+                        updateBrightnessDisplay(currentBrightness);
+                        document.getElementById('brightnessSlider').value = currentBrightness;
+                    }
+                    if (data.chase_length !== undefined) {
+                        currentChaseLength = data.chase_length;
+                        updateLengthDisplay(currentChaseLength);
+                        document.getElementById('lengthSlider').value = currentChaseLength;
+                    }
+                } else if (data.status === 'stopped') {
+                    updateStatus('灯带状态: 已停止');
+                } else if (data.status === 'unavailable') {
+                    updateStatus('灯带状态: 不可用');
+                }
+                
+            } catch (error) {
+                debugLog('状态检查失败: ' + error.message);
+            }
+        }
+
+        // 检查后端连接
+        async function checkBackend() {
+            try {
+                debugLog('检查后端连接...');
+                const response = await fetch('/health');
+                const data = await response.json();
+                debugLog(`后端状态: ${data.status}, 用户: ${data.user}, Root: ${data.is_root}`);
+                
+                // 获取LED状态
+                await checkLedStatus();
+                
+            } catch (error) {
+                debugLog('后端连接失败: ' + error.message);
+                updateStatus('灯带状态: 后端连接失败');
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            debugLog('页面加载完成，正在初始化...');
+            checkBackend();
+            
+            // 每3秒检查一次状态
+            setInterval(checkLedStatus, 3000);
+            
+            // 初始化滑块值显示
+            updateBrightnessDisplay(currentBrightness);
+            updateLengthDisplay(currentChaseLength);
+        });
+
+        // 滑块值改变时的实时预览
+        document.getElementById('brightnessSlider').addEventListener('input', function(e) {
+            updateBrightnessDisplay(e.target.value);
+        });
+
+        document.getElementById('lengthSlider').addEventListener('input', function(e) {
+            updateLengthDisplay(e.target.value);
+        });
+    </script>
+</body>
+</html>

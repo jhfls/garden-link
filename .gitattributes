@@ -1,0 +1,4 @@
+*.avif binary
+*.onnx binary
+*.pptx binary
+*.xml -diff
