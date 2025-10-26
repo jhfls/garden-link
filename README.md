@@ -6,7 +6,7 @@
 
 ## 项目结构
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wu-dynamics/garden-link)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jhfls/garden-link)
 
 ```
 ├─ backend/           # 后端

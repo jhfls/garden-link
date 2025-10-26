@@ -20,7 +20,7 @@ class SmartBroadcast:
         self.camera_available = False
         self.simulation_mode = True
         
-        self.api_key = "sk-c8d57c40332a43509e927b3fc22ea04f"
+        self.api_key = "" # revoked
         self.api_url = "https://api.deepseek.com/chat/completions"
         
         self.is_playing_audio = False
